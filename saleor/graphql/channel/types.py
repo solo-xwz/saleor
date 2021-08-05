@@ -33,6 +33,7 @@ class ChannelContextType(DjangoObjectType):
 
     @classmethod
     def is_type_of(cls, root: ChannelContext, info):
+        print(cls.__name__, type(root))
         return super().is_type_of(root.node, info)
 
     @staticmethod
@@ -60,6 +61,11 @@ class ChannelContextTypeWithMetadata(ChannelContextType):
     def resolve_private_metadata(root: ChannelContext, info):
         # Used in metadata API to resolve private metadata fields from an instance.
         return ObjectWithMetadata.resolve_private_metadata(root.node, info)
+
+    @classmethod
+    def is_type_of(cls, root: ChannelContext, info):
+        print(cls.__name__, type(root))
+        return super().is_type_of(root, info)
 
 
 class Channel(CountableDjangoObjectType):
