@@ -121,7 +121,7 @@ class Address(CountableDjangoObjectType):
         return False
 
     @staticmethod
-    def __resolve_reference(root, _info, **_kwargs):
+    def __resolve_reference(root: "Address", _info, **_kwargs):
         return graphene.Node.get_node_from_global_id(_info, root.id)
 
 
@@ -373,7 +373,7 @@ class User(CountableDjangoObjectType):
         return resolve_wishlist_items_from_user(root)
 
     @staticmethod
-    def __resolve_reference(root, _info, **_kwargs):
+    def __resolve_reference(root: "User", _info, **_kwargs):
         if root.id is not None:
             return graphene.Node.get_node_from_global_id(_info, root.id)
         return get_user_model().objects.get(email=root.email)

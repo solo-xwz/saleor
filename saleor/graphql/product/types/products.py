@@ -95,6 +95,11 @@ from ..dataloaders import (
 )
 from ..enums import VariantAttributeScope
 from ..filters import ProductFilterInput
+from ..resolvers import (
+    resolve_collection_by_id,
+    resolve_product_by_id,
+    resolve_variant_by_id,
+)
 from ..sorters import ProductOrder
 from .channels import (
     CollectionChannelListing,
@@ -168,8 +173,9 @@ class ProductPricingInfo(BasePricingInfo):
         description = "Represents availability of a product in the storefront."
 
 
-@key(fields="id")
+@key(fields="id channelSlug")
 class ProductVariant(ChannelContextTypeWithMetadata, CountableDjangoObjectType):
+    channel_slug = graphene.String(description="Current channel's slug")
     channel_listings = graphene.List(
         graphene.NonNull(ProductVariantChannelListing),
         description="List of price information in channels for the product.",
@@ -255,6 +261,10 @@ class ProductVariant(ChannelContextTypeWithMetadata, CountableDjangoObjectType):
         only_fields = ["id", "name", "product", "sku", "track_inventory", "weight"]
         interfaces = [relay.Node, ObjectWithMetadata]
         model = models.ProductVariant
+
+    @staticmethod
+    def resolve_channel_slug(root: ChannelContext[models.Product], info):
+        return root.channel_slug
 
     @staticmethod
     @one_of_permissions_required(
@@ -479,10 +489,23 @@ class ProductVariant(ChannelContextTypeWithMetadata, CountableDjangoObjectType):
         return ImagesByProductVariantIdLoader(info.context).load(root.node.id)
 
     @staticmethod
-    def __resolve_reference(
-        root: ChannelContext[models.ProductVariant], _info, **_kwargs
-    ):
-        return graphene.Node.get_node_from_global_id(_info, root.node.id)
+    def __resolve_reference(root: "ProductVariant", info, **_kwargs):
+        requestor = get_user_or_app_from_context(info.context)
+        is_staff = requestor_is_staff_member_or_app(requestor)
+        _, id = from_global_id_or_error(root.id, ProductVariant)
+
+        variant = resolve_variant_by_id(
+            info,
+            id,
+            channel_slug=root.channel_slug,
+            requestor=requestor,
+            requestor_has_access_to_all=is_staff,
+        )
+        return (
+            ChannelContext(node=variant, channel_slug=root.channel_slug)
+            if variant
+            else None
+        )
 
     @staticmethod
     def resolve_weight(root: ChannelContext[models.ProductVariant], _info, **_kwargs):
@@ -491,9 +514,7 @@ class ProductVariant(ChannelContextTypeWithMetadata, CountableDjangoObjectType):
 
 @key(fields="id channelSlug")
 class Product(ChannelContextTypeWithMetadata, CountableDjangoObjectType):
-    channel_slug = graphene.String(
-        description="Channel string"
-    )
+    channel_slug = graphene.String(description="Current channel's slug")
     description_json = graphene.JSONString(
         description="Description of the product (JSON).",
         deprecation_reason=(
@@ -885,13 +906,16 @@ class Product(ChannelContextTypeWithMetadata, CountableDjangoObjectType):
 
     @staticmethod
     def __resolve_reference(root: "Product", info, **_kwargs):
-        from ..resolvers import resolve_product_by_id
         requestor = get_user_or_app_from_context(info.context)
-        _type, id = from_global_id_or_error(root.id, Product)
+        _, id = from_global_id_or_error(root.id, Product)
         product = resolve_product_by_id(
             info, id, channel_slug=root.channel_slug, requestor=requestor
         )
-        return ChannelContext(node=product, channel_slug=root.channel_slug) if product else None
+        return (
+            ChannelContext(node=product, channel_slug=root.channel_slug)
+            if product
+            else None
+        )
 
     @staticmethod
     def resolve_weight(root: ChannelContext[models.Product], _info, **_kwargs):
@@ -1034,7 +1058,7 @@ class ProductType(CountableDjangoObjectType):
         return resolve_attributes(info, qs=qs, **kwargs)
 
     @staticmethod
-    def __resolve_reference(root, _info, **_kwargs):
+    def __resolve_reference(root: "ProductType", _info, **_kwargs):
         return graphene.Node.get_node_from_global_id(_info, root.id)
 
     @staticmethod
@@ -1042,8 +1066,9 @@ class ProductType(CountableDjangoObjectType):
         return convert_weight_to_default_weight_unit(root.weight)
 
 
-@key(fields="id")
+@key(fields="id channelSlug")
 class Collection(ChannelContextTypeWithMetadata, CountableDjangoObjectType):
+    channel_slug = graphene.String(description="Current channel's slug")
     description_json = graphene.JSONString(
         description="Description of the collection (JSON).",
         deprecation_reason=(
@@ -1084,6 +1109,10 @@ class Collection(ChannelContextTypeWithMetadata, CountableDjangoObjectType):
         model = models.Collection
 
     @staticmethod
+    def resolve_channel_slug(root: ChannelContext[models.Product], info):
+        return root.channel_slug
+
+    @staticmethod
     def resolve_background_image(
         root: ChannelContext[models.Collection], info, size=None, **_kwargs
     ):
@@ -1113,8 +1142,16 @@ class Collection(ChannelContextTypeWithMetadata, CountableDjangoObjectType):
         )
 
     @staticmethod
-    def __resolve_reference(root, _info, **_kwargs):
-        return graphene.Node.get_node_from_global_id(_info, root.id)
+    def __resolve_reference(root: "Collection", info, **_kwargs):
+        requestor = get_user_or_app_from_context(info.context)
+        _type, id = from_global_id_or_error(root.id, Collection)
+        collection = resolve_collection_by_id(info, id, root.channel_slug, requestor)
+
+        return (
+            ChannelContext(node=collection, channel_slug=root.channel_slug)
+            if collection
+            else None
+        )
 
     @staticmethod
     def resolve_description_json(root: ChannelContext[models.Collection], info):
@@ -1218,7 +1255,7 @@ class Category(CountableDjangoObjectType):
         return ChannelQsContext(qs=qs, channel_slug=channel)
 
     @staticmethod
-    def __resolve_reference(root, _info, **_kwargs):
+    def __resolve_reference(root: "Category", _info, **_kwargs):
         return graphene.Node.get_node_from_global_id(_info, root.id)
 
 
@@ -1248,7 +1285,7 @@ class ProductMedia(CountableDjangoObjectType):
         return info.context.build_absolute_uri(url)
 
     @staticmethod
-    def __resolve_reference(root, _info, **_kwargs):
+    def __resolve_reference(root: "ProductMedia", _info, **_kwargs):
         return graphene.Node.get_node_from_global_id(_info, root.id)
 
 

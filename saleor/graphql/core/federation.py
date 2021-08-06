@@ -18,7 +18,7 @@ def set_entity_type_resolver(schema):
     def resolve_entity_type(instance, info):
         if isinstance(instance, ChannelContext):
             return org_type_resolver(instance.node, info)
-        
+
         return org_type_resolver(instance, info)
 
-    #entity.resolve_type = resolve_entity_type
+    entity.resolve_type = resolve_entity_type
