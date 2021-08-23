@@ -5005,3 +5005,136 @@ def test_email_update_to_existing_email(user_api_client, customer_user, staff_us
             "field": "newEmail",
         }
     ]
+
+
+USER_FEDERATION_QUERY = """
+  query GetUserInFederation($representations: [_Any]) {
+    _entities(representations: $representations) {
+      __typename
+      ... on User {
+        id
+        email
+      }
+    }
+  }
+"""
+
+
+def test_staff_query_user_by_id_for_federation(staff_api_client, customer_user):
+    customer_user_id = graphene.Node.to_global_id("User", customer_user.pk)
+    variables = {
+        "representations": [
+            {
+                "__typename": "User",
+                "id": customer_user_id,
+            },
+        ],
+    }
+
+    response = staff_api_client.post_graphql(USER_FEDERATION_QUERY, variables)
+    content = get_graphql_content(response)
+    assert content["data"]["_entities"] == [
+        {
+            "__typename": "User",
+            "id": customer_user_id,
+            "email": customer_user.email,
+        }
+    ]
+
+
+def test_staff_query_user_by_email_for_federation(staff_api_client, customer_user):
+    customer_user_id = graphene.Node.to_global_id("User", customer_user.pk)
+    variables = {
+        "representations": [
+            {
+                "__typename": "User",
+                "email": customer_user.email,
+            },
+        ],
+    }
+
+    response = staff_api_client.post_graphql(USER_FEDERATION_QUERY, variables)
+    content = get_graphql_content(response)
+    assert content["data"]["_entities"] == [
+        {
+            "__typename": "User",
+            "id": customer_user_id,
+            "email": customer_user.email,
+        }
+    ]
+
+
+ADDRESS_FEDERATION_QUERY = """
+  query GetUserInFederation($representations: [_Any]) {
+    _entities(representations: $representations) {
+      __typename
+      ... on Address {
+        id
+        city
+      }
+    }
+  }
+"""
+
+
+def test_customer_query_address_federation(user_api_client, customer_user, address):
+    customer_user.addresses.add(address)
+
+    address_id = graphene.Node.to_global_id("Address", address.pk)
+    variables = {
+        "representations": [
+            {
+                "__typename": "Address",
+                "id": address_id,
+            },
+        ],
+    }
+
+    response = user_api_client.post_graphql(ADDRESS_FEDERATION_QUERY, variables)
+    content = get_graphql_content(response)
+    assert content["data"]["_entities"] == [
+        {
+            "__typename": "Address",
+            "id": address_id,
+            "city": address.city,
+        }
+    ]
+
+
+def test_staff_query_address_federation(staff_api_query, address):
+    address_id = graphene.Node.to_global_id("Address", address.pk)
+    variables = {
+        "representations": [
+            {
+                "__typename": "Address",
+                "id": address_id,
+            },
+        ],
+    }
+
+    response = staff_api_query.post_graphql(ADDRESS_FEDERATION_QUERY, variables)
+    content = get_graphql_content(response)
+    assert content["data"]["_entities"] == [
+        {
+            "__typename": "Address",
+            "id": address_id,
+            "city": address.city,
+        }
+    ]
+
+
+def test_unauthenticated_query_address_federation(api_query, address):
+    address_id = graphene.Node.to_global_id("Address", address.pk)
+    variables = {
+        "representations": [
+            {
+                "__typename": "Address",
+                "id": address_id,
+            },
+        ],
+    }
+
+    response = api_query.post_graphql(ADDRESS_FEDERATION_QUERY, variables)
+    content = get_graphql_content(response, ignore_errors=True)
+    assert content["errors"] == []
+    assert content["data"]["_entities"] is None
