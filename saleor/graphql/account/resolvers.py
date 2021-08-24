@@ -152,7 +152,7 @@ def prepare_graphql_payment_sources_type(payment_sources):
 
 
 @traced_resolver
-def resolve_address(info, id):
+def resolve_address(info, id, *, raise_exception=True):
     user = info.context.user
     app = info.context.app
     _model, address_pk = from_global_id_or_error(id, Address)
@@ -160,7 +160,9 @@ def resolve_address(info, id):
         return models.Address.objects.filter(pk=address_pk).first()
     if user and not user.is_anonymous:
         return user.addresses.filter(id=address_pk).first()
-    return PermissionDenied()
+    if raise_exception:
+        return PermissionDenied()
+    return None
 
 
 def resolve_permissions(root: models.User):

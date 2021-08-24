@@ -5020,7 +5020,67 @@ USER_FEDERATION_QUERY = """
 """
 
 
-def test_staff_query_user_by_id_for_federation(staff_api_client, customer_user):
+def test_staff_query_user_by_id_for_federation(
+    staff_api_client, customer_user, permission_manage_users
+):
+    customer_user_id = graphene.Node.to_global_id("User", customer_user.pk)
+    variables = {
+        "representations": [
+            {
+                "__typename": "User",
+                "id": customer_user_id,
+            },
+        ],
+    }
+
+    response = staff_api_client.post_graphql(
+        USER_FEDERATION_QUERY,
+        variables,
+        permissions=[permission_manage_users],
+        check_no_permissions=False,
+    )
+    content = get_graphql_content(response)
+    assert content["data"]["_entities"] == [
+        {
+            "__typename": "User",
+            "id": customer_user_id,
+            "email": customer_user.email,
+        }
+    ]
+
+
+def test_staff_query_user_by_email_for_federation(
+    staff_api_client, customer_user, permission_manage_users
+):
+    customer_user_id = graphene.Node.to_global_id("User", customer_user.pk)
+    variables = {
+        "representations": [
+            {
+                "__typename": "User",
+                "email": customer_user.email,
+            },
+        ],
+    }
+
+    response = staff_api_client.post_graphql(
+        USER_FEDERATION_QUERY,
+        variables,
+        permissions=[permission_manage_users],
+        check_no_permissions=False,
+    )
+    content = get_graphql_content(response)
+    assert content["data"]["_entities"] == [
+        {
+            "__typename": "User",
+            "id": customer_user_id,
+            "email": customer_user.email,
+        }
+    ]
+
+
+def test_staff_query_user_by_id_without_permission_for_federation(
+    staff_api_client, customer_user
+):
     customer_user_id = graphene.Node.to_global_id("User", customer_user.pk)
     variables = {
         "representations": [
@@ -5033,16 +5093,12 @@ def test_staff_query_user_by_id_for_federation(staff_api_client, customer_user):
 
     response = staff_api_client.post_graphql(USER_FEDERATION_QUERY, variables)
     content = get_graphql_content(response)
-    assert content["data"]["_entities"] == [
-        {
-            "__typename": "User",
-            "id": customer_user_id,
-            "email": customer_user.email,
-        }
-    ]
+    assert content["data"]["_entities"] == [None]
 
 
-def test_staff_query_user_by_email_for_federation(staff_api_client, customer_user):
+def test_staff_query_user_by_email_without_permission_for_federation(
+    staff_api_client, customer_user
+):
     customer_user_id = graphene.Node.to_global_id("User", customer_user.pk)
     variables = {
         "representations": [
@@ -5055,6 +5111,25 @@ def test_staff_query_user_by_email_for_federation(staff_api_client, customer_use
 
     response = staff_api_client.post_graphql(USER_FEDERATION_QUERY, variables)
     content = get_graphql_content(response)
+    assert content["data"]["_entities"] == [None]
+
+
+def test_customer_query_self_by_id_for_federation(user_api_client, customer_user):
+    customer_user_id = graphene.Node.to_global_id("User", customer_user.pk)
+    variables = {
+        "representations": [
+            {
+                "__typename": "User",
+                "id": customer_user_id,
+            },
+        ],
+    }
+
+    response = user_api_client.post_graphql(
+        USER_FEDERATION_QUERY,
+        variables,
+    )
+    content = get_graphql_content(response)
     assert content["data"]["_entities"] == [
         {
             "__typename": "User",
@@ -5062,6 +5137,111 @@ def test_staff_query_user_by_email_for_federation(staff_api_client, customer_use
             "email": customer_user.email,
         }
     ]
+
+
+def test_customer_query_self_by_email_for_federation(user_api_client, customer_user):
+    customer_user_id = graphene.Node.to_global_id("User", customer_user.pk)
+    variables = {
+        "representations": [
+            {
+                "__typename": "User",
+                "email": customer_user.email,
+            },
+        ],
+    }
+
+    response = user_api_client.post_graphql(
+        USER_FEDERATION_QUERY,
+        variables,
+    )
+    content = get_graphql_content(response)
+    assert content["data"]["_entities"] == [
+        {
+            "__typename": "User",
+            "id": customer_user_id,
+            "email": customer_user.email,
+        }
+    ]
+
+
+def test_customer_query_user_by_id_for_federation(
+    user_api_client, customer_user, staff_user
+):
+    staff_user_id = graphene.Node.to_global_id("User", staff_user.pk)
+    variables = {
+        "representations": [
+            {
+                "__typename": "User",
+                "id": staff_user_id,
+            },
+        ],
+    }
+
+    response = user_api_client.post_graphql(
+        USER_FEDERATION_QUERY,
+        variables,
+    )
+    content = get_graphql_content(response)
+    assert content["data"]["_entities"] == [None]
+
+
+def test_customer_query_user_by_email_for_federation(
+    user_api_client, customer_user, staff_user
+):
+    staff_user_id = graphene.Node.to_global_id("User", staff_user.pk)
+    variables = {
+        "representations": [
+            {
+                "__typename": "User",
+                "email": staff_user.email,
+            },
+        ],
+    }
+
+    response = user_api_client.post_graphql(
+        USER_FEDERATION_QUERY,
+        variables,
+    )
+    content = get_graphql_content(response)
+    assert content["data"]["_entities"] == [None]
+
+
+def test_unauthenticated_query_user_by_id_for_federation(api_client, customer_user):
+    customer_user_id = graphene.Node.to_global_id("User", customer_user.pk)
+    variables = {
+        "representations": [
+            {
+                "__typename": "User",
+                "id": customer_user_id,
+            },
+        ],
+    }
+
+    response = api_client.post_graphql(
+        USER_FEDERATION_QUERY,
+        variables,
+    )
+    content = get_graphql_content(response)
+    assert content["data"]["_entities"] == [None]
+
+
+def test_unauthenticated_query_user_by_email_for_federation(api_client, customer_user):
+    customer_user_id = graphene.Node.to_global_id("User", customer_user.pk)
+    variables = {
+        "representations": [
+            {
+                "__typename": "User",
+                "email": customer_user.email,
+            },
+        ],
+    }
+
+    response = api_client.post_graphql(
+        USER_FEDERATION_QUERY,
+        variables,
+    )
+    content = get_graphql_content(response)
+    assert content["data"]["_entities"] == [None]
 
 
 ADDRESS_FEDERATION_QUERY = """
@@ -5101,7 +5281,11 @@ def test_customer_query_address_federation(user_api_client, customer_user, addre
     ]
 
 
-def test_staff_query_address_federation(staff_api_query, address):
+def test_customer_query_other_user_address_federation(
+    user_api_client, staff_user, customer_user, address
+):
+    staff_user.addresses.add(address)
+
     address_id = graphene.Node.to_global_id("Address", address.pk)
     variables = {
         "representations": [
@@ -5112,7 +5296,73 @@ def test_staff_query_address_federation(staff_api_query, address):
         ],
     }
 
-    response = staff_api_query.post_graphql(ADDRESS_FEDERATION_QUERY, variables)
+    response = user_api_client.post_graphql(ADDRESS_FEDERATION_QUERY, variables)
+    content = get_graphql_content(response)
+    assert content["data"]["_entities"] == [None]
+
+
+def test_staff_query_other_user_address_federation(
+    staff_api_client, customer_user, address
+):
+    customer_user.addresses.add(address)
+
+    address_id = graphene.Node.to_global_id("Address", address.pk)
+    variables = {
+        "representations": [
+            {
+                "__typename": "Address",
+                "id": address_id,
+            },
+        ],
+    }
+
+    response = staff_api_client.post_graphql(ADDRESS_FEDERATION_QUERY, variables)
+    content = get_graphql_content(response)
+    assert content["data"]["_entities"] == [None]
+
+
+def test_staff_query_other_user_address_with_permission_federation(
+    staff_api_client, customer_user, address, permission_manage_users
+):
+    customer_user.addresses.add(address)
+
+    address_id = graphene.Node.to_global_id("Address", address.pk)
+    variables = {
+        "representations": [
+            {
+                "__typename": "Address",
+                "id": address_id,
+            },
+        ],
+    }
+
+    response = staff_api_client.post_graphql(
+        ADDRESS_FEDERATION_QUERY,
+        variables,
+        permissions=[permission_manage_users],
+        check_no_permissions=False,
+    )
+    content = get_graphql_content(response)
+    assert content["data"]["_entities"] == [None]
+
+
+def test_app_query_address_federation(app_api_client, address, permission_manage_users):
+    address_id = graphene.Node.to_global_id("Address", address.pk)
+    variables = {
+        "representations": [
+            {
+                "__typename": "Address",
+                "id": address_id,
+            },
+        ],
+    }
+
+    response = app_api_client.post_graphql(
+        ADDRESS_FEDERATION_QUERY,
+        variables,
+        permissions=[permission_manage_users],
+        check_no_permissions=False,
+    )
     content = get_graphql_content(response)
     assert content["data"]["_entities"] == [
         {
@@ -5123,7 +5373,7 @@ def test_staff_query_address_federation(staff_api_query, address):
     ]
 
 
-def test_unauthenticated_query_address_federation(api_query, address):
+def test_app_no_permission_query_address_federation(app_api_client, address):
     address_id = graphene.Node.to_global_id("Address", address.pk)
     variables = {
         "representations": [
@@ -5134,7 +5384,22 @@ def test_unauthenticated_query_address_federation(api_query, address):
         ],
     }
 
-    response = api_query.post_graphql(ADDRESS_FEDERATION_QUERY, variables)
-    content = get_graphql_content(response, ignore_errors=True)
-    assert content["errors"] == []
-    assert content["data"]["_entities"] is None
+    response = app_api_client.post_graphql(ADDRESS_FEDERATION_QUERY, variables)
+    content = get_graphql_content(response)
+    assert content["data"]["_entities"] == [None]
+
+
+def test_unauthenticated_query_address_federation(api_client, address):
+    address_id = graphene.Node.to_global_id("Address", address.pk)
+    variables = {
+        "representations": [
+            {
+                "__typename": "Address",
+                "id": address_id,
+            },
+        ],
+    }
+
+    response = api_client.post_graphql(ADDRESS_FEDERATION_QUERY, variables)
+    content = get_graphql_content(response)
+    assert content["data"]["_entities"] == [None]

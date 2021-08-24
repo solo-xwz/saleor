@@ -124,7 +124,7 @@ class Address(CountableDjangoObjectType):
     def __resolve_reference(root: "Address", info, **_kwargs):
         from .resolvers import resolve_address
 
-        return resolve_address(info, root.id)
+        return resolve_address(info, root.id, raise_exception=False)
 
 
 class CustomerEvent(CountableDjangoObjectType):
