@@ -1,4 +1,3 @@
-from graphene import ObjectType
 from graphene_federation import build_schema
 
 from ..channel import ChannelContext
@@ -11,7 +10,7 @@ def build_federated_schema(query=None, mutation=None, **kwargs):
 
 
 def set_entity_type_resolver(schema):
-    """Sets type resolver on _Entity union that's aware of ChannelContext."""
+    """Set type resolver aware of ChannelContext on _Entity union."""
     entity = schema.get_type("_Entity")
     org_type_resolver = entity.resolve_type
 

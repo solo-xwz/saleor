@@ -5099,7 +5099,6 @@ def test_staff_query_user_by_id_without_permission_for_federation(
 def test_staff_query_user_by_email_without_permission_for_federation(
     staff_api_client, customer_user
 ):
-    customer_user_id = graphene.Node.to_global_id("User", customer_user.pk)
     variables = {
         "representations": [
             {
@@ -5188,7 +5187,6 @@ def test_customer_query_user_by_id_for_federation(
 def test_customer_query_user_by_email_for_federation(
     user_api_client, customer_user, staff_user
 ):
-    staff_user_id = graphene.Node.to_global_id("User", staff_user.pk)
     variables = {
         "representations": [
             {
@@ -5226,7 +5224,6 @@ def test_unauthenticated_query_user_by_id_for_federation(api_client, customer_us
 
 
 def test_unauthenticated_query_user_by_email_for_federation(api_client, customer_user):
-    customer_user_id = graphene.Node.to_global_id("User", customer_user.pk)
     variables = {
         "representations": [
             {
