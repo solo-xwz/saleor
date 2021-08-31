@@ -5053,6 +5053,7 @@ type Product implements Node & ObjectWithMetadata {
   metadata: [MetadataItem]!
   channelSlug: String
   descriptionJson: JSONString @deprecated(reason: "This field will be removed in Saleor 4.0. Use the `description` field instead.")
+  thumbnail(size: Int): Image
   pricing(address: AddressInput): ProductPricingInfo
   isAvailable(address: AddressInput): Boolean
   taxType: TaxType
