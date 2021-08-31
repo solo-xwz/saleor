@@ -124,6 +124,7 @@ class Address(CountableDjangoObjectType):
     def __resolve_reference(root: "Address", info, **_kwargs):
         try:
             from .resolvers import resolve_address
+
             return resolve_address(info, root.id)
         except PermissionDenied:
             return None
