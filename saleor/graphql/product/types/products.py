@@ -175,7 +175,12 @@ class ProductPricingInfo(BasePricingInfo):
 
 @key(fields="id channelSlug")
 class ProductVariant(ChannelContextTypeWithMetadata, CountableDjangoObjectType):
-    channel_slug = graphene.String(description="Current channel's slug")
+    channel_slug = graphene.String(
+        description=(
+            "Channel slug given to retrieve this product variant. Also used by "
+            "federation gateway to resolve this object in federated query."
+        ),
+    )
     channel_listings = graphene.List(
         graphene.NonNull(ProductVariantChannelListing),
         description="List of price information in channels for the product.",
@@ -514,7 +519,12 @@ class ProductVariant(ChannelContextTypeWithMetadata, CountableDjangoObjectType):
 
 @key(fields="id channelSlug")
 class Product(ChannelContextTypeWithMetadata, CountableDjangoObjectType):
-    channel_slug = graphene.String(description="Current channel's slug")
+    channel_slug = graphene.String(
+        description=(
+            "Channel slug given to retrieve this product. Also used by "
+            "federation gateway to resolve this object in federated query."
+        ),
+    )
     description_json = graphene.JSONString(
         description="Description of the product (JSON).",
         deprecation_reason=(
@@ -1068,7 +1078,12 @@ class ProductType(CountableDjangoObjectType):
 
 @key(fields="id channelSlug")
 class Collection(ChannelContextTypeWithMetadata, CountableDjangoObjectType):
-    channel_slug = graphene.String(description="Current channel's slug")
+    channel_slug = graphene.String(
+        description=(
+            "Channel slug given to retrieve this collection. Also used by "
+            "federation gateway to resolve this object in federated query."
+        ),
+    )
     description_json = graphene.JSONString(
         description="Description of the collection (JSON).",
         deprecation_reason=(

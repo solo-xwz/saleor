@@ -122,9 +122,11 @@ class Address(CountableDjangoObjectType):
 
     @staticmethod
     def __resolve_reference(root: "Address", info, **_kwargs):
-        from .resolvers import resolve_address
-
-        return resolve_address(info, root.id, raise_exception=False)
+        try:
+            from .resolvers import resolve_address
+            return resolve_address(info, root.id)
+        except PermissionDenied:
+            return None
 
 
 class CustomerEvent(CountableDjangoObjectType):
