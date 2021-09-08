@@ -171,7 +171,11 @@ def check_lines_quantity(
             )
     try:
         check_stock_quantity_bulk(
-            variants, country, quantities, channel_slug, existing_lines=existing_lines,
+            variants,
+            country,
+            quantities,
+            channel_slug,
+            existing_lines=existing_lines,
             check_reservations=check_reservations,
         )
     except InsufficientStock as e:
@@ -472,10 +476,13 @@ class CheckoutLinesAdd(BaseMutation):
 
     @classmethod
     def validate_checkout_lines(
-        cls, variants, quantities, country, channel_slug, lines=None
+        cls, site_settings, variants, quantities, country, channel_slug, lines=None
     ):
         check_lines_quantity(
-            variants, quantities, country, channel_slug,
+            variants,
+            quantities,
+            country,
+            channel_slug,
             existing_lines=lines,
             check_reservations=site_settings.enable_stock_reservations,
         )
@@ -838,23 +845,28 @@ class CheckoutShippingAddressUpdate(BaseMutation, I18nMixin):
                 id__in=variant_ids
             ).prefetch_related("product__product_type")
         )  # FIXME: is this prefetch needed?
-        quantities = [line_info.line.quantity for line_info in lines]
-        current_lines = [line_info.line for line_info in lines]
-        check_lines_quantity(
-            variants,
-            quantities,
-            country,
-            channel_slug,
-            current_checkout_lines=current_lines,
-            check_reservations=site_settings.enable_stock_reservations,
-        )
+
         if site_settings.enable_stock_reservations:
-            reserve_stocks(
-                current_lines,
+            # If stock reservations are enabled, we need to pass existing lines
+            # For reservation validation to run correctly
+            quantities = [0] * len(variants)
+            check_lines_quantity(
                 variants,
+                quantities,
                 country,
                 channel_slug,
-                site_settings.reserve_stock_duration_minutes,
+                allow_zero_quantity=True,
+                existing_lines=lines,
+                check_reservations=True,
+            )
+        else:
+            quantities = [line_info.line.quantity for line_info in lines]
+            check_lines_quantity(
+                variants,
+                quantities,
+                country,
+                channel_slug,
+                check_reservations=False,
             )
 
     @classmethod
