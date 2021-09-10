@@ -148,7 +148,6 @@ All notable, unreleased changes to this project will be documented in this file.
 - Allow impersonating user by an app/staff - #7754 by @korycins:
   - Add `customerId` to `checkoutCustomerAttach` mutation
   - Add new permision `IMPERSONATE_USER`
-- Reserve stocks for checkouts in progress - #7589 by @rafalp
 - Reserve stocks for checkouts - #7589 by @rafalp
 
 ### Breaking
